@@ -1,0 +1,104 @@
+service: taller-orders
+
+frameworkVersion: '4'
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  region: us-east-1
+  stage: ${opt:stage, 'develop'}
+  profile: serverless-user
+  apiGateway:
+    restApiId:
+      Fn::ImportValue: MainRestApiId-${self:provider.stage}
+    restApiRootResourceId:
+      Fn::ImportValue: MainRestApiRootResourceId-${self:provider.stage}
+  environment:
+    ORDERS_TABLE: ${self:custom.tableName}
+    STAGE: ${self:provider.stage}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource:
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.tableName}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.tableName}/index/*
+        - Effect: Allow
+          Action:
+            - lambda:InvokeFunction
+          Resource:
+            - arn:aws:lambda:${self:provider.region}:*:function:taller-products-${self:provider.stage}-*
+
+custom:
+  tableName: orders-table-${self:provider.stage}
+
+functions:
+  createOrder:
+    handler: src/handlers/createOrder.createOrder
+    events:
+      - http:
+          path: orders
+          method: post
+          cors: true
+
+  getOrder:
+    handler: src/handlers/getOrder.getOrder
+    events:
+      - http:
+          path: orders/{id}
+          method: get
+          cors: true
+
+  listOrdersByUser:
+    handler: src/handlers/listOrdersByUser.listOrdersByUser
+    events:
+      - http:
+          path: orders/user/{userId}
+          method: get
+          cors: true
+
+  confirmOrder:
+    handler: src/handlers/confirmOrder.confirmOrder
+    events:
+      - http:
+          path: orders/{id}/confirm
+          method: post
+          cors: true
+
+  cancelOrder:
+    handler: src/handlers/cancelOrder.cancelOrder
+    events:
+      - http:
+          path: orders/{id}/cancel
+          method: post
+          cors: true
+
+resources:
+  Resources:
+    OrdersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.tableName}
+        AttributeDefinitions:
+          - AttributeName: orderId
+            AttributeType: S
+          - AttributeName: userId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: orderId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: user-orders-index
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PAY_PER_REQUEST

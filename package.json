@@ -1,0 +1,22 @@
+{
+  "name": "taller-orders",
+  "version": "1.0.0",
+  "description": "Módulo de órdenes para Amazon Lite",
+  "main": "index.js",
+  "scripts": {
+    "deploy:dev": "sls deploy --stage develop"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.600.0",
+    "@aws-sdk/client-lambda": "^3.600.0",
+    "@aws-sdk/lib-dynamodb": "^3.600.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.138",
+    "@types/node": "^20.19.43",
+    "@types/uuid": "^9.0.8",
+    "serverless": "^4.0.0",
+    "typescript": "^5.3.3"
+  }
+}
